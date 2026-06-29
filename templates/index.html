@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rajeev's College Assistant</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <main class="app-shell">
+        <section class="chat-panel" aria-label="College assistant chat">
+            <header class="chat-header">
+                <div>
+                    <p class="eyebrow">Xavier Docs</p>
+                    <h1>Xavier-Guide</h1>
+                </div>
+                <div class="status-pill" id="statusPill">
+                    <span class="status-dot"></span>
+                    Ready
+                </div>
+            </header>
+
+            <div class="message-list" id="messageList" aria-live="polite">
+                <article class="message assistant">
+                    <div class="avatar">A</div>
+                    <div class="bubble">
+                        Ask me anything from your uploaded college documents.
+                    </div>
+                </article>
+            </div>
+
+            <form class="composer" id="chatForm">
+                <label class="sr-only" for="messageInput">Message</label>
+                <textarea id="messageInput" name="message" rows="1" placeholder="Type your question..." autocomplete="off" required></textarea>
+                <button type="submit" id="sendButton" aria-label="Send message">
+                    <span>Send</span>
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                        <path d="M3.5 20.5 21 12 3.5 3.5v6.2L14 12 3.5 14.3v6.2Z"></path>
+                    </svg>
+                </button>
+            </form>
+        </section>
+    </main>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <script src="/static/script.js"></script>
+</body>
+</html>

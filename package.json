@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "dompurify": "^3.4.11",
+    "react-markdown": "^10.1.0"
+  }
+}
