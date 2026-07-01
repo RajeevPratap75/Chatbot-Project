@@ -1,10 +1,8 @@
 import logging
 import os
-import re
 import uuid
 from dataclasses import dataclass
 from typing import Iterable, Iterator, Sequence
-
 from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -52,122 +50,21 @@ embedding_model = HuggingFaceEmbeddings(
 embedding_dimension = len(embedding_model.embed_query("dimension probe"))
 
 splitter = RecursiveCharacterTextSplitter(
-    # separators=['\n\n','\n','.'],
+    separators=["\n\n","\n",". ","? ","! ","; ",", "," ",""],
     chunk_size=CHUNK_SIZE,
     chunk_overlap=CHUNK_OVERLAP,
 )
-
-UNICODE_REPLACEMENTS = str.maketrans({
-    "\u201c": '"',
-    "\u201d": '"',
-    "\u201e": '"',
-    "\u201f": '"',
-    "\u2018": "'",
-    "\u2019": "'",
-    "\u201a": "'",
-    "\u201b": "'",
-    "\u2014": "-",
-    "\u2013": "-",
-    "\u2212": "-",
-    "\u2026": "...",
-    "\u00a0": " ",
-})
-
-PAGE_NUMBER_RE = re.compile(
-    r"^(?:page\s*)?\d+(?:\s*(?:of|/)\s*\d+)?$",
-    re.IGNORECASE,
-    
-)
-
 
 @dataclass(frozen=True)
 class PageText:
     page_number: int
     text: str
 
-
 @dataclass(frozen=True)
 class ChunkRecord:
     text: str
     chunk_index: int
     page_number: int | None
-
-
-def normalize_line(line: str) -> str:
-    """Normalize punctuation and whitespace on a single extracted text line."""
-    line = line.translate(UNICODE_REPLACEMENTS)
-    line = re.sub(r"[ \t]+", " ", line)
-    line = re.sub(r"\s+([,.;:!?%)\]}])", r"\1", line)
-    line = re.sub(r"([({\[])\s+", r"\1", line)
-    return line.strip()
-
-
-def find_repeated_headers_and_footers(page_texts: Sequence[str]) -> set[str]:
-    """Detect repeated top/bottom lines likely to be page headers or footers."""
-    line_counts: dict[str, int] = {}
-
-    for page_text in page_texts:
-        lines = [normalize_line(line) for line in page_text.splitlines()]
-        lines = [line for line in lines if line]
-        candidates = lines[:5] + lines[-5:]
-
-        for line in set(candidates):
-            if not PAGE_NUMBER_RE.fullmatch(line):
-                line_counts[line] = line_counts.get(line, 0) + 1
-
-    min_repeats = max(2, len(page_texts) // 2)
-    return {
-        line
-        for line, count in line_counts.items()
-        if count >= min_repeats
-    }
-
-
-def clean_page_text(page_text: str, repeated_lines: set[str]) -> str:
-    cleaned_lines: list[str] = []
-
-    for raw_line in page_text.splitlines():
-        line = normalize_line(raw_line)
-
-        if not line:
-            if cleaned_lines and cleaned_lines[-1] != "":
-                cleaned_lines.append("")
-            continue
-
-        if PAGE_NUMBER_RE.fullmatch(line):
-            continue
-
-        if line in repeated_lines:
-            continue
-
-        cleaned_lines.append(line)
-
-    return "\n".join(cleaned_lines).strip()
-
-
-def clean_document_pages(pages: Sequence[PageText]) -> list[PageText]:
-    repeated_lines = find_repeated_headers_and_footers([page.text for page in pages])
-    cleaned_pages = []
-
-    for page in pages:
-        cleaned_text = clean_page_text(page.text, repeated_lines)
-        if cleaned_text:
-            cleaned_pages.append(PageText(page_number=page.page_number, text=cleaned_text))
-
-    return cleaned_pages
-
-
-def clean_document_text(page_texts: Sequence[str]) -> str:
-    """Preserve the previous cleaner API for callers that only need text."""
-    pages = [
-        PageText(page_number=index + 1, text=text)
-        for index, text in enumerate(page_texts)
-    ]
-    cleaned_pages = clean_document_pages(pages)
-    cleaned_text = "\n\n".join(page.text for page in cleaned_pages)
-    cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text)
-    return cleaned_text.strip()
-
 
 def get_vector_params(collection_info) -> VectorParams:
     vectors = collection_info.config.params.vectors
@@ -242,13 +139,12 @@ def extract_page_texts(pdf_path: str) -> list[PageText]:
     return pages
 
 
-def build_clean_text_with_page_ranges(pages: Sequence[PageText]) -> tuple[str, list[tuple[int, int, int]]]:
-    """Join cleaned pages and track character ranges for page-level metadata."""
+def build_clean_text_with_page_ranges(pages):
     document_parts: list[str] = []
     page_ranges: list[tuple[int, int, int]] = []
     cursor = 0
 
-    for page in clean_document_pages(pages):
+    for page in pages:
         if document_parts:
             document_parts.append("\n\n")
             cursor += 2
@@ -259,7 +155,7 @@ def build_clean_text_with_page_ranges(pages: Sequence[PageText]) -> tuple[str, l
         page_ranges.append((start, cursor, page.page_number))
 
     full_text = "".join(document_parts)
-    full_text = re.sub(r"\n{3,}", "\n\n", full_text).strip()
+    full_text = "".join(document_parts).strip()
     return full_text, page_ranges
 
 
