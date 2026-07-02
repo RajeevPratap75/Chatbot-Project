@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-dotenv
+groq
+langchain-huggingface
+langchain-text-splitters
+pypdf
+qdrant-client
+httpx
+sentence-transformers
