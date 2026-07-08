@@ -12,7 +12,6 @@ from groq import Groq
 from langchain_huggingface import HuggingFaceEmbeddings
 import uvicorn
 import httpx
-
 try:
     from qdrant_client import QdrantClient
 except ModuleNotFoundError:
@@ -47,11 +46,9 @@ if QdrantClient:
 # Embedding model
 embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-
 # Request model
 class ChatRequest(BaseModel):
     message: str
-
 
 class ConnectionManager:
     def __init__(self):
@@ -69,12 +66,10 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-
 def validate_message(message):
     if not isinstance(message, str) or not message.strip():
         raise ValueError("Message must be a non-empty string.")
     return message.strip()
-
 
 def parse_websocket_message(raw_message):
     try:
@@ -86,7 +81,6 @@ def parse_websocket_message(raw_message):
         raise ValueError("WebSocket payload must be a JSON object or plain text message.")
 
     return validate_message(payload.get("message"))
-
 
 def search_documents(query_embedding):
     if qdrant_client:
@@ -151,7 +145,6 @@ Question:
 Answer:
 """
 
-
 def retrieve_context(user_message):
 
     query_embedding = embedding_model.embed_query(user_message)
@@ -171,14 +164,12 @@ def generate_answer(prompt):
     )
     return response.choices[0].message.content
 
-
 async def answer_question(user_message):
     user_message = validate_message(user_message)
     context = await asyncio.to_thread(retrieve_context, user_message)
     prompt = build_prompt(user_message, context)
     answer = await asyncio.to_thread(generate_answer, prompt)
     return answer
-
 
 async def stream_answer(prompt, websocket, stop_event):
     loop = asyncio.get_running_loop()
@@ -227,17 +218,14 @@ async def stream_answer(prompt, websocket, stop_event):
 
     return True
 
-
 # Home route
 @app.get("/")
 def home():
     return FileResponse("templates/index.html")
 
-
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon():
     return FileResponse("static/favicon.svg", media_type="image/svg+xml")
-
 
 # Chat endpoint
 @app.post("/chat")
@@ -251,7 +239,6 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail="The server could not answer right now.") from exc
 
     return {"reply": answer}
-
 
 @app.websocket("/ws")
 async def websocket_chat(websocket: WebSocket):
@@ -300,7 +287,6 @@ async def websocket_chat(websocket: WebSocket):
         logger.exception("Unexpected WebSocket error")
     finally:
         manager.disconnect(websocket)
-
 
 # Run locally
 if __name__ == "__main__":
